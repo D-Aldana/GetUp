@@ -1,85 +1,4 @@
-import { ConfigPlugin, withAndroidManifest } from '@expo/config-plugins';
 import { ConfigContext, ExpoConfig } from 'expo/config';
-
-const withAlarmPermissions: ConfigPlugin = (config) => {
-  return withAndroidManifest(config, (config) => {
-    const manifest = config.modResults;
-
-    const permissions = [
-      'android.permission.SCHEDULE_EXACT_ALARM',
-      'android.permission.VIBRATE',
-      'android.permission.RECEIVE_BOOT_COMPLETED',
-      'android.permission.FOREGROUND_SERVICE',
-      'android.permission.WAKE_LOCK',
-      'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK',
-      'android.permission.POST_NOTIFICATIONS',
-    ];
-
-    for (const perm of permissions) {
-      if (!manifest.manifest['uses-permission']?.some((p) => p.$['android:name'] === perm)) {
-        manifest.manifest['uses-permission'] = [
-          ...(manifest.manifest['uses-permission'] || []),
-          { $: { 'android:name': perm } },
-        ];
-      }
-    }
-
-    const app = manifest.manifest.application?.[0];
-    if (!app) return config;
-
-    const receivers = [
-      {
-        $: {
-          'android:name': 'com.expoalarmmodule.receivers.AlarmReceiver',
-          'android:enabled': 'true',
-          'android:exported': 'true',
-        },
-      },
-      {
-        $: {
-          'android:name': 'com.expoalarmmodule.receivers.BootReceiver',
-          'android:exported': 'true',
-        },
-        'intent-filter': [
-          {
-            action: [
-              { $: { 'android:name': 'android.intent.action.BOOT_COMPLETED' } },
-            ],
-          },
-        ],
-      },
-      {
-        $: {
-          'android:name': 'com.expoalarmmodule.receivers.NotificationActionReceiver',
-          'android:enabled': 'true',
-          'android:exported': 'true',
-        },
-        'intent-filter': [
-          {
-            action: [
-              { $: { 'android:name': 'DISMISS_ACTION' } },
-              { $: { 'android:name': 'SNOOZE_ACTION' } },
-            ],
-          },
-        ],
-      },
-    ];
-
-    app.receiver = [...(app.receiver || []), ...receivers];
-
-    app.service = [
-      ...(app.service || []),
-      {
-        $: {
-          'android:name': 'com.expoalarmmodule.AlarmService',
-          'android:foregroundServiceType': 'mediaPlayback',
-        },
-      },
-    ];
-
-    return config;
-  });
-};
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -132,7 +51,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-alarm-module',
-    withAlarmPermissions,
+    'expo-notifications',
   ],
 
   experiments: {

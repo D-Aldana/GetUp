@@ -1,98 +1,169 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import styled from '@emotion/native';
+import Checkbox from '@react-native-community/checkbox';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { removeAlarm, scheduleAlarm, stopAlarm } from 'expo-alarm-module';
+import React, { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+const Container = styled.View`
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+`;
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const [time, setTime] = useState<Date | null>(null);
+  const [show, setShow] = useState(false);
+  const [tasks, setTasks] = useState<string[]>([]);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const { setValue, handleSubmit, control } = useForm();
+
+  const addToList = (data: any) => {
+    if (data && data.trim().length > 0) {
+      setTasks([...tasks, data.trim()]);
+    }
+    setValue('task', '');
+  };
+
+  const setAlarm = async (localDate: Date) => {
+    if (!localDate) return;
+
+    const now = new Date();
+    const trigger = new Date(now);
+    trigger.setHours(localDate.getHours(), localDate.getMinutes(), 0, 0);
+
+    if (trigger <= now) {
+      trigger.setDate(trigger.getDate() + 1);
+    }
+
+    try {
+      await scheduleAlarm({
+        uid: 'alarm1',
+        day: trigger,
+        title: 'Wake Up!',
+        showDismiss: true,
+        showSnooze: true,
+        snoozeInterval: 5,
+        repeating: true,
+        active: true,
+      } as any);
+    } catch (err) {
+      console.error('Failed to schedule alarm', err);
+    }
+  };
+
+  const onChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    const nativeEvent: any = event;
+    if (Platform.OS === 'android') {
+      setShow(false);
+      if (nativeEvent?.type === 'dismissed') return;
+    } else {
+      setShow(true);
+    }
+
+    if (!selectedDate) return;
+
+    const hours = selectedDate.getHours();
+    const minutes = selectedDate.getMinutes();
+
+    const localDate = new Date();
+    localDate.setHours(hours, minutes, 0, 0);
+
+    setTime(localDate);
+    setAlarm(localDate);
+  };
+
+  const cancelAlarm = async () => {
+    setTime(null);
+    try {
+      await removeAlarm?.('alarm1');
+    } catch (err) {
+      try {
+        await removeAlarm?.();
+      } catch (e) {
+        console.error('Failed to remove alarm', e);
+      }
+    }
+  };
+
+  const stopCurrentAlarm = async () => {
+    try {
+      await stopAlarm?.('alarm1');
+    } catch (err) {
+      try {
+        await stopAlarm?.();
+      } catch (e) {
+        console.error('Failed to stop alarm', e);
+      }
+    }
+  };
+
+  return (
+    <Container>
+      {time && <Text>Alarm Time: {time.toLocaleTimeString()}</Text>}
+
+      <TouchableOpacity onPress={() => setShow(true)}>
+        <Text>Select Time</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={cancelAlarm}>
+        <Text>Cancel Alarm</Text>
+      </TouchableOpacity>
+
+      <Controller
+        control={control}
+        name="task"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextInput
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+            placeholder="Example Input"
+            style={{
+              height: 40,
+              borderColor: 'gray',
+              borderWidth: 1,
+              marginBottom: 10,
+              paddingHorizontal: 10,
+            }}
+          />
+        )}
+      />
+
+      <TouchableOpacity onPress={handleSubmit((data) => addToList(data.task))}>
+        <Text>Submit</Text>
+      </TouchableOpacity>
+
+      {tasks.length > 0 ? (
+        tasks.map((task, index) => (
+          <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Checkbox
+              value={false}
+              onValueChange={() => {
+                const newTasks = [...tasks];
+                newTasks.splice(index, 1);
+                setTasks(newTasks);
+              }}
+            />
+            <Text>{task}</Text>
+          </View>
+        ))
+      ) : (
+        <TouchableOpacity onPress={stopCurrentAlarm}>
+          <Text>Stop Alarm</Text>
+        </TouchableOpacity>
+      )}
+
+      {show && (
+        <DateTimePicker
+          value={time || new Date()}
+          mode="time"
+          is24Hour={false}
+          display="default"
+          onChange={onChange}
+        />
+      )}
+    </Container>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
