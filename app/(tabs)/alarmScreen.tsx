@@ -38,13 +38,87 @@ const ToggleText = styled.Text`
   margin-right: 10px;
 `;
 
+const DayPicker = styled.View`
+  display: flex;
+  margin: 20px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  background-color: #ffffff;
+  padding: 20px 10px;
+  gap: 10px;
+`;
+
+const DayPickerHeader = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const DayPickerHeaderText = styled.Text`
+  font-size: 18px;
+  margin: 0 10px;
+`;
+
+const DayToggle = styled.TouchableOpacity`
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  justify-content: center;
+  align-items: center;
+  margin: 0 5px;
+  background-color: ${(props: { selected: boolean }) =>
+    props.selected ? "#81b0ff" : "#f0f0f0"};
+`;
+
+const DaysToggleContainer = styled.View`
+  flex-direction: row;
+  justify-content: center;
+  margin-top: 10px;
+`;
+
+const DayToggleText = styled.Text`
+  font-size: 16px;
+  color: ${(props: { selected: boolean }) =>
+    props.selected ? "#ffffff" : "#000000"};
+`;
+
 export default function AlarmScreen() {
   const [selectedHour, setSelectedHour] = useState<number>(12);
   const [selectedMinute, setSelectedMinute] = useState<number>(0);
   const [selectedPeriod, setSelectedPeriod] = useState<"AM" | "PM">("AM");
+  const [isEveryday, setIsEveryday] = useState<boolean>(false);
+
+  const [selectedDays, setSelectedDays] = useState<{
+    [key: number]: boolean;
+  }>({
+    0: false,
+    1: false,
+    2: false,
+    3: false,
+    4: false,
+    5: false,
+    6: false,
+  });
 
   const [isEnabled, setIsEnabled] = useState(false);
   const toggleSwitch = () => setIsEnabled((previousState) => !previousState);
+  const toggleEveryday = () => {
+    setIsEveryday((prev) => {
+      const newValue = !prev;
+      const updatedDays = {
+        0: newValue,
+        1: newValue,
+        2: newValue,
+        3: newValue,
+        4: newValue,
+        5: newValue,
+        6: newValue,
+      };
+      setSelectedDays(updatedDays);
+      return newValue;
+    });
+  };
 
   useEffect(() => {
     if (isEnabled) {
@@ -54,10 +128,22 @@ export default function AlarmScreen() {
       } else if (selectedPeriod === "AM" && hour === 12) {
         hour = 0;
       }
+
+      console.log(
+        `Alarm set for ${hour}:${
+          selectedMinute < 10 ? "0" : ""
+        }${selectedMinute}`
+      );
+      console.log(
+        "Repeats on days:",
+        Object.entries(selectedDays)
+          .filter(([_, v]) => v)
+          .map(([k, _]) => k)
+      );
     } else {
       console.log("Alarm disabled");
     }
-  }, [isEnabled, selectedHour, selectedMinute, selectedPeriod]);
+  }, [isEnabled, selectedHour, selectedMinute, selectedPeriod, selectedDays]);
 
   return (
     <Container>
@@ -103,6 +189,36 @@ export default function AlarmScreen() {
           value={isEnabled}
         />
       </ToggleContainer>
+      <DayPicker>
+        <DayPickerHeader>
+          <DayPickerHeaderText>Repeat</DayPickerHeaderText>
+          <Switch
+            trackColor={{ false: "#767577", true: "#81b0ff" }}
+            thumbColor={"#f4f3f4"}
+            ios_backgroundColor="#3e3e3e"
+            onValueChange={toggleEveryday}
+            value={isEveryday}
+          />
+        </DayPickerHeader>
+        <DaysToggleContainer>
+          {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+            <DayToggle
+              key={index}
+              selected={selectedDays[index]}
+              onPress={() => {
+                setSelectedDays((prev) => ({
+                  ...prev,
+                  [index]: !prev[index],
+                }));
+              }}
+            >
+              <DayToggleText selected={selectedDays[index]}>
+                {day}
+              </DayToggleText>
+            </DayToggle>
+          ))}
+        </DaysToggleContainer>
+      </DayPicker>
     </Container>
   );
 }
