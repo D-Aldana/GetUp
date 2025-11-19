@@ -1,6 +1,7 @@
 import { ScrollList } from "@/components/scroll-list";
 import styled from "@emotion/native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Switch } from "react-native";
 
 const Container = styled.View`
   flex: 1;
@@ -11,7 +12,6 @@ const Container = styled.View`
 const Header = styled.Text`
   font-size: 24px;
   font-weight: bold;
-  margin-bottom: 20px;
 `;
 
 const TimePicker = styled.View`
@@ -28,14 +28,40 @@ const PickerColumn = styled.View`
   align-items: center;
 `;
 
+const ToggleContainer = styled.View`
+  flex-direction: row;
+  align-items: center;
+`;
+
+const ToggleText = styled.Text`
+  font-size: 18px;
+  margin-right: 10px;
+`;
+
 export default function AlarmScreen() {
-  const [selectedHour, setSelectedHour] = useState("1");
-  const [selectedMinute, setSelectedMinute] = useState("00");
-  const [selectedPeriod, setSelectedPeriod] = useState("AM");
+  const [selectedHour, setSelectedHour] = useState<number>(12);
+  const [selectedMinute, setSelectedMinute] = useState<number>(0);
+  const [selectedPeriod, setSelectedPeriod] = useState<"AM" | "PM">("AM");
+
+  const [isEnabled, setIsEnabled] = useState(false);
+  const toggleSwitch = () => setIsEnabled((previousState) => !previousState);
+
+  useEffect(() => {
+    if (isEnabled) {
+      let hour = selectedHour;
+      if (selectedPeriod === "PM" && hour < 12) {
+        hour += 12;
+      } else if (selectedPeriod === "AM" && hour === 12) {
+        hour = 0;
+      }
+    } else {
+      console.log("Alarm disabled");
+    }
+  }, [isEnabled, selectedHour, selectedMinute, selectedPeriod]);
 
   return (
     <Container>
-      <Header>Alarm Screen</Header>
+      <Header>Get Up</Header>
       <TimePicker>
         <PickerColumn>
           <ScrollList
@@ -67,6 +93,16 @@ export default function AlarmScreen() {
           />
         </PickerColumn>
       </TimePicker>
+      <ToggleContainer>
+        <ToggleText>Enable Alarm</ToggleText>
+        <Switch
+          trackColor={{ false: "#767577", true: "#81b0ff" }}
+          thumbColor={"#f4f3f4"}
+          ios_backgroundColor="#3e3e3e"
+          onValueChange={toggleSwitch}
+          value={isEnabled}
+        />
+      </ToggleContainer>
     </Container>
   );
 }
