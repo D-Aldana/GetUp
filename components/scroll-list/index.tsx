@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
-  ListRenderItemInfo,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   StyleSheet,
   Text,
   View,
@@ -32,52 +33,56 @@ export const ScrollList: React.FC<Props> = ({
   const mod = (n: number, m: number) => ((n % m) + m) % m;
 
   useEffect(() => {
-    if (!repeat) {
+    if (repeat) {
+      const MULTIPLIER = 200;
+      setData(Array(MULTIPLIER).fill(items).flat());
+    } else {
       setData(items);
-      return;
     }
-
-    const REPEAT_COUNT = 200;
-    const buffer = Array(REPEAT_COUNT).fill(items).flat();
-    setData(buffer);
   }, [items, repeat]);
 
+  // Start in middle for infinite loop
   useEffect(() => {
     if (data.length === 0) return;
 
-    const middle = repeat ? Math.floor(data.length / 2) : 0;
-    const targetIndex = middle + startIndex;
+    const mid = repeat ? Math.floor(data.length / 2) : 0;
+    const target = mid + startIndex;
 
     listRef.current?.scrollToOffset({
-      offset: targetIndex * itemHeight,
+      offset: target * itemHeight,
       animated: false,
     });
-  }, [data, startIndex, repeat, itemHeight]);
+  }, [data]);
 
-  const handleSnap = (e: any) => {
-    const offset = e.nativeEvent.contentOffset.y;
+  // -------------------------------
+  // 🧲 CUSTOM SNAPPING (smooth)
+  // -------------------------------
+  const snapTo = (offset: number) => {
     const index = Math.round(offset / itemHeight);
-
     listRef.current?.scrollToOffset({
       offset: index * itemHeight,
       animated: true,
     });
+
+    const realIndex = repeat ? mod(index, items.length) : index;
+    onActiveChange?.(items[realIndex], realIndex);
   };
 
-  useEffect(() => {
-    const listener = scrollY.addListener(({ value }) => {
-      const index = Math.round(value / itemHeight);
-      const actualIndex = repeat ? mod(index, items.length) : index;
+  const handleScrollEndDrag = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offset = e.nativeEvent.contentOffset.y;
 
-      if (onActiveChange && items[actualIndex]) {
-        onActiveChange(items[actualIndex], actualIndex);
-      }
-    });
+    // Allow a tiny delay so momentum can finish
+    setTimeout(() => {
+      snapTo(offset);
+    }, 50);
+  };
 
-    return () => scrollY.removeListener(listener);
-  }, [items, repeat, itemHeight, onActiveChange]);
+  const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offset = e.nativeEvent.contentOffset.y;
+    snapTo(offset);
+  };
 
-  const renderItem = ({ item, index }: ListRenderItemInfo<string>) => {
+  const renderItem = ({ item, index }: any) => {
     const inputRange = [
       (index - 1) * itemHeight,
       index * itemHeight,
@@ -86,7 +91,7 @@ export const ScrollList: React.FC<Props> = ({
 
     const scale = scrollY.interpolate({
       inputRange,
-      outputRange: [0.8, 1.5, 0.8],
+      outputRange: [0.8, 1.4, 0.8],
       extrapolate: "clamp",
     });
 
@@ -112,7 +117,7 @@ export const ScrollList: React.FC<Props> = ({
     <View style={[styles.container, { height }]}>
       <LinearGradient
         colors={["white", "transparent"]}
-        style={[styles.topMask, { height: itemHeight * 2 }]}
+        style={[styles.mask, { top: 0, height: itemHeight * 2 }]}
       />
 
       <Animated.FlatList
@@ -120,9 +125,7 @@ export const ScrollList: React.FC<Props> = ({
         data={data}
         keyExtractor={(_, i) => i.toString()}
         showsVerticalScrollIndicator={false}
-        snapToInterval={itemHeight}
         decelerationRate="fast"
-        onMomentumScrollEnd={handleSnap}
         contentContainerStyle={{
           paddingVertical: height / 2 - itemHeight / 2,
         }}
@@ -131,12 +134,14 @@ export const ScrollList: React.FC<Props> = ({
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: true }
         )}
+        onScrollEndDrag={handleScrollEndDrag}
+        onMomentumScrollEnd={handleMomentumEnd}
         scrollEventThrottle={16}
       />
 
       <LinearGradient
         colors={["transparent", "white"]}
-        style={[styles.bottomMask, { height: itemHeight * 2 }]}
+        style={[styles.mask, { bottom: 0, height: itemHeight * 2 }]}
       />
     </View>
   );
@@ -156,14 +161,8 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     fontSize: 18,
   },
-  topMask: {
+  mask: {
     position: "absolute",
-    width: "100%",
-    zIndex: 10,
-  },
-  bottomMask: {
-    position: "absolute",
-    bottom: 0,
     width: "100%",
     zIndex: 10,
   },
