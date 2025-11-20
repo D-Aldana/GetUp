@@ -45,7 +45,7 @@ const DayPicker = styled.View`
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   background-color: #ffffff;
-  padding: 20px 10px;
+  padding: 15px 10px;
   gap: 10px;
 `;
 
@@ -180,7 +180,7 @@ export default function AlarmScreen() {
         </PickerColumn>
       </TimePicker>
       <ToggleContainer>
-        <ToggleText>Enable Alarm</ToggleText>
+        <ToggleText>Enable Your Alarm</ToggleText>
         <Switch
           trackColor={{ false: "#767577", true: "#81b0ff" }}
           thumbColor={"#f4f3f4"}
