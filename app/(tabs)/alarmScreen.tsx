@@ -97,18 +97,18 @@ export default function AlarmScreen() {
   const [selectedHour, setSelectedHour] = useState<number>(12);
   const [selectedMinute, setSelectedMinute] = useState<number>(0);
   const [selectedPeriod, setSelectedPeriod] = useState<string>("AM");
-  const [isEveryday, setIsEveryday] = useState<boolean>(false);
+  const [isEveryday, setIsEveryday] = useState<boolean>(true);
 
   const [selectedDays, setSelectedDays] = useState<{
     [key: number]: boolean;
   }>({
-    0: false,
-    1: false,
-    2: false,
-    3: false,
-    4: false,
-    5: false,
-    6: false,
+    0: true,
+    1: true,
+    2: true,
+    3: true,
+    4: true,
+    5: true,
+    6: true,
   });
 
   const [isEnabled, setIsEnabled] = useState(false);
