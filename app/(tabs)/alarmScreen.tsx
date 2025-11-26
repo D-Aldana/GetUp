@@ -1,4 +1,5 @@
 import { ScrollList } from "@/components/scroll-list";
+import { TaskManager } from "@/components/task-manager";
 import styled from "@emotion/native";
 import { useEffect, useState } from "react";
 import { Switch } from "react-native";
@@ -7,6 +8,7 @@ const Container = styled.View`
   flex: 1;
   justify-content: center;
   align-items: center;
+  padding: 15px;
 `;
 
 const Header = styled.Text`
@@ -15,12 +17,17 @@ const Header = styled.Text`
 `;
 
 const TimePicker = styled.View`
+  width: 100%;
   display: flex;
   flex-direction: row;
-  margin: 20px;
+  margin: 20px 0;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  background-color: #ffffff;
+  padding: 5px;
+  gap: 10px;
+  elevation: 3;
 `;
 
 const PickerColumn = styled.View`
@@ -39,6 +46,7 @@ const ToggleText = styled.Text`
 `;
 
 const DayPicker = styled.View`
+  width: 100%;
   display: flex;
   margin: 20px 0;
   border-radius: 10px;
@@ -47,6 +55,7 @@ const DayPicker = styled.View`
   background-color: #ffffff;
   padding: 15px 10px;
   gap: 10px;
+  elevation: 3;
 `;
 
 const DayPickerHeader = styled.View`
@@ -58,6 +67,7 @@ const DayPickerHeader = styled.View`
 const DayPickerHeaderText = styled.Text`
   font-size: 18px;
   margin: 0 10px;
+  font-weight: bold;
 `;
 
 const DayToggle = styled.TouchableOpacity`
@@ -86,7 +96,7 @@ const DayToggleText = styled.Text`
 export default function AlarmScreen() {
   const [selectedHour, setSelectedHour] = useState<number>(12);
   const [selectedMinute, setSelectedMinute] = useState<number>(0);
-  const [selectedPeriod, setSelectedPeriod] = useState<"AM" | "PM">("AM");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("AM");
   const [isEveryday, setIsEveryday] = useState<boolean>(false);
 
   const [selectedDays, setSelectedDays] = useState<{
@@ -140,8 +150,6 @@ export default function AlarmScreen() {
           .filter(([_, v]) => v)
           .map(([k, _]) => k)
       );
-    } else {
-      console.log("Alarm disabled");
     }
   }, [isEnabled, selectedHour, selectedMinute, selectedPeriod, selectedDays]);
 
@@ -219,6 +227,7 @@ export default function AlarmScreen() {
           ))}
         </DaysToggleContainer>
       </DayPicker>
+      <TaskManager />
     </Container>
   );
 }
