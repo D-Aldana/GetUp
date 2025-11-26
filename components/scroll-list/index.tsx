@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import {
   Animated,
+  FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
   StyleSheet,
@@ -14,7 +15,6 @@ interface Props {
   height?: number;
   itemHeight?: number;
   onActiveChange?: (item: string, index: number) => void;
-  repeat?: boolean;
   startIndex?: number;
 }
 
@@ -22,126 +22,113 @@ export const ScrollList: React.FC<Props> = ({
   items,
   height = 300,
   itemHeight = 50,
-  repeat = false,
   startIndex = 0,
   onActiveChange,
 }) => {
   const scrollY = useRef(new Animated.Value(0)).current;
-  const listRef = useRef<Animated.FlatList<string>>(null);
-  const [data, setData] = useState<string[]>([]);
-
-  const mod = (n: number, m: number) => ((n % m) + m) % m;
+  const listRef = useRef<FlatList<string>>(null);
 
   useEffect(() => {
-    if (repeat) {
-      const MULTIPLIER = 200;
-      setData(Array(MULTIPLIER).fill(items).flat());
-    } else {
-      setData(items);
-    }
-  }, [items, repeat]);
-
-  // Start in middle for infinite loop
-  useEffect(() => {
-    if (data.length === 0) return;
-
-    const mid = repeat ? Math.floor(data.length / 2) : 0;
-    const target = mid + startIndex;
+    if (items.length === 0) return;
 
     listRef.current?.scrollToOffset({
-      offset: target * itemHeight,
+      offset: startIndex * itemHeight,
       animated: false,
     });
-  }, [data]);
 
-  // -------------------------------
-  // 🧲 CUSTOM SNAPPING (smooth)
-  // -------------------------------
-  const snapTo = (offset: number) => {
-    const index = Math.round(offset / itemHeight);
-    listRef.current?.scrollToOffset({
-      offset: index * itemHeight,
-      animated: true,
-    });
+    onActiveChange?.(items[startIndex], startIndex);
+  }, [items, itemHeight, startIndex]);
 
-    const realIndex = repeat ? mod(index, items.length) : index;
-    onActiveChange?.(items[realIndex], realIndex);
-  };
+  const snapTo = useCallback(
+    (offset: number) => {
+      const index = Math.round(offset / itemHeight);
+      listRef.current?.scrollToOffset({
+        offset: index * itemHeight,
+        animated: true,
+      });
 
-  const handleScrollEndDrag = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offset = e.nativeEvent.contentOffset.y;
+      onActiveChange?.(items[index], index);
+    },
+    [items, itemHeight, onActiveChange]
+  );
 
-    // Allow a tiny delay so momentum can finish
-    setTimeout(() => {
-      snapTo(offset);
-    }, 50);
-  };
-
-  const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offset = e.nativeEvent.contentOffset.y;
     snapTo(offset);
   };
 
-  const renderItem = ({ item, index }: any) => {
-    const inputRange = [
-      (index - 1) * itemHeight,
-      index * itemHeight,
-      (index + 1) * itemHeight,
-    ];
+  // Memoized item renderer
+  const RenderItem = useCallback(
+    ({ item, index }: { item: string; index: number }) => {
+      const inputRange = [
+        (index - 1) * itemHeight,
+        index * itemHeight,
+        (index + 1) * itemHeight,
+      ];
 
-    const scale = scrollY.interpolate({
-      inputRange,
-      outputRange: [0.8, 1.4, 0.8],
-      extrapolate: "clamp",
-    });
+      const scale = scrollY.interpolate({
+        inputRange,
+        outputRange: [0.8, 1.4, 0.8],
+        extrapolate: "clamp",
+      });
 
-    const opacity = scrollY.interpolate({
-      inputRange,
-      outputRange: [0.3, 1, 0.3],
-      extrapolate: "clamp",
-    });
+      const opacity = scrollY.interpolate({
+        inputRange,
+        outputRange: [0.3, 1, 0.3],
+        extrapolate: "clamp",
+      });
 
-    return (
-      <Animated.View
-        style={[
-          styles.item,
-          { height: itemHeight, transform: [{ scale }], opacity },
-        ]}
-      >
-        <Text style={styles.text}>{item}</Text>
-      </Animated.View>
-    );
-  };
+      return (
+        <Animated.View
+          style={[
+            styles.item,
+            { height: itemHeight, transform: [{ scale }], opacity },
+          ]}
+        >
+          <Text style={styles.text}>{item}</Text>
+        </Animated.View>
+      );
+    },
+    [scrollY, itemHeight]
+  );
 
   return (
     <View style={[styles.container, { height }]}>
       <LinearGradient
         colors={["white", "transparent"]}
         style={[styles.mask, { top: 0, height: itemHeight * 2 }]}
+        pointerEvents="none"
       />
 
       <Animated.FlatList
         ref={listRef}
-        data={data}
+        data={items}
         keyExtractor={(_, i) => i.toString()}
         showsVerticalScrollIndicator={false}
         decelerationRate="fast"
         contentContainerStyle={{
           paddingVertical: height / 2 - itemHeight / 2,
         }}
-        renderItem={renderItem}
+        renderItem={RenderItem}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: true }
         )}
-        onScrollEndDrag={handleScrollEndDrag}
-        onMomentumScrollEnd={handleMomentumEnd}
+        onScrollEndDrag={handleScrollEnd}
+        onMomentumScrollEnd={handleScrollEnd}
         scrollEventThrottle={16}
+        getItemLayout={(_, index) => ({
+          length: itemHeight,
+          offset: itemHeight * index,
+          index,
+        })}
+        removeClippedSubviews={true}
       />
 
       <LinearGradient
         colors={["transparent", "white"]}
         style={[styles.mask, { bottom: 0, height: itemHeight * 2 }]}
+        pointerEvents="none"
       />
     </View>
   );
