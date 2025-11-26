@@ -57,7 +57,6 @@ export const ScrollList: React.FC<Props> = ({
     snapTo(offset);
   };
 
-  // Memoized item renderer
   const RenderItem = useCallback(
     ({ item, index }: { item: string; index: number }) => {
       const inputRange = [
