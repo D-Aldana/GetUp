@@ -14,8 +14,8 @@ interface Props {
   items: string[];
   height?: number;
   itemHeight?: number;
-  onActiveChange?: (item: string, index: number) => void;
   startIndex?: number;
+  onActiveChange?: (item: string, index: number) => void;
 }
 
 export const ScrollList: React.FC<Props> = ({
@@ -29,7 +29,7 @@ export const ScrollList: React.FC<Props> = ({
   const listRef = useRef<FlatList<string>>(null);
 
   useEffect(() => {
-    if (items.length === 0) return;
+    if (!items.length) return;
 
     listRef.current?.scrollToOffset({
       offset: startIndex * itemHeight,
@@ -37,26 +37,17 @@ export const ScrollList: React.FC<Props> = ({
     });
 
     onActiveChange?.(items[startIndex], startIndex);
-  }, [items, itemHeight, startIndex]);
+  }, [items, startIndex, itemHeight]);
 
-  const snapTo = useCallback(
-    (offset: number) => {
-      const index = Math.round(offset / itemHeight);
-      listRef.current?.scrollToOffset({
-        offset: index * itemHeight,
-        animated: true,
-      });
+  const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const rawOffset = e.nativeEvent.contentOffset.y;
 
+    const index = Math.round(rawOffset / itemHeight);
+
+    if (index >= 0 && index < items.length) {
       onActiveChange?.(items[index], index);
-    },
-    [items, itemHeight, onActiveChange]
-  );
-
-  const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offset = e.nativeEvent.contentOffset.y;
-    snapTo(offset);
+    }
   };
-
   const RenderItem = useCallback(
     ({ item, index }: { item: string; index: number }) => {
       const inputRange = [
@@ -104,24 +95,24 @@ export const ScrollList: React.FC<Props> = ({
         data={items}
         keyExtractor={(_, i) => i.toString()}
         showsVerticalScrollIndicator={false}
-        decelerationRate="fast"
-        contentContainerStyle={{
-          paddingVertical: height / 2 - itemHeight / 2,
-        }}
+        decelerationRate={0.55}
+        snapToInterval={itemHeight}
         renderItem={RenderItem}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: true }
         )}
-        onScrollEndDrag={handleScrollEnd}
-        onMomentumScrollEnd={handleScrollEnd}
+        onMomentumScrollEnd={handleMomentumEnd}
         scrollEventThrottle={16}
+        contentContainerStyle={{
+          paddingVertical: height / 2 - itemHeight / 2,
+        }}
         getItemLayout={(_, index) => ({
           length: itemHeight,
           offset: itemHeight * index,
           index,
         })}
-        removeClippedSubviews={true}
+        removeClippedSubviews={false}
       />
 
       <LinearGradient
