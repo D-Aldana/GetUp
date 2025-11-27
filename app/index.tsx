@@ -1,8 +1,10 @@
 import { ScrollList } from "@/components/scroll-list";
 import { TaskManager } from "@/components/task-manager";
+import { useAlarm } from "@/hooks/use-alarm";
+import { useSecureStore } from "@/hooks/use-local-storage";
 import styled from "@emotion/native";
 import { useEffect, useState } from "react";
-import { Switch } from "react-native";
+import { Switch, Text, TouchableOpacity } from "react-native";
 
 const Container = styled.View`
   flex: 1;
@@ -93,22 +95,31 @@ const DayToggleText = styled.Text`
     props.selected ? "#ffffff" : "#000000"};
 `;
 
+type Alarm = {
+  id: string;
+  day: number;
+  hour: number;
+  minute: number;
+};
+
 export default function AlarmScreen() {
+  const [alarms, setAlarms] = useSecureStore<Alarm[]>("alarms", []);
+
   const [selectedHour, setSelectedHour] = useState<number>(12);
   const [selectedMinute, setSelectedMinute] = useState<number>(0);
   const [selectedPeriod, setSelectedPeriod] = useState<string>("AM");
-  const [isEveryday, setIsEveryday] = useState<boolean>(false);
+  const [isEveryday, setIsEveryday] = useState<boolean>(true);
 
   const [selectedDays, setSelectedDays] = useState<{
     [key: number]: boolean;
   }>({
-    0: false,
-    1: false,
-    2: false,
-    3: false,
-    4: false,
-    5: false,
-    6: false,
+    0: true,
+    1: true,
+    2: true,
+    3: true,
+    4: true,
+    5: true,
+    6: true,
   });
 
   const [isEnabled, setIsEnabled] = useState(false);
@@ -130,28 +141,46 @@ export default function AlarmScreen() {
     });
   };
 
-  useEffect(() => {
-    if (isEnabled) {
-      let hour = selectedHour;
-      if (selectedPeriod === "PM" && hour < 12) {
-        hour += 12;
-      } else if (selectedPeriod === "AM" && hour === 12) {
-        hour = 0;
-      }
+  const { scheduleAlarm, cancelAlarm, stopAlarm } = useAlarm();
 
-      console.log(
-        `Alarm set for ${hour}:${
-          selectedMinute < 10 ? "0" : ""
-        }${selectedMinute}`
-      );
-      console.log(
-        "Repeats on days:",
-        Object.entries(selectedDays)
-          .filter(([_, v]) => v)
-          .map(([k, _]) => k)
-      );
+  useEffect(() => {
+    if (!isEnabled) {
+      alarms.forEach((alarm) => cancelAlarm(alarm.id));
+      setAlarms([]);
+      return;
     }
-  }, [isEnabled, selectedHour, selectedMinute, selectedPeriod, selectedDays]);
+
+    const hour24 =
+      selectedPeriod === "PM" && selectedHour < 12
+        ? selectedHour + 12
+        : selectedPeriod === "AM" && selectedHour === 12
+        ? 0
+        : selectedHour;
+
+    const daysToSchedule = isEveryday
+      ? [0, 1, 2, 3, 4, 5, 6]
+      : Object.keys(selectedDays)
+          .filter((k) => selectedDays[parseInt(k)])
+          .map((k) => parseInt(k));
+
+    daysToSchedule.forEach((day) => {
+      const alarmId = `alarm-${day}-${hour24}-${selectedMinute}`;
+      if (!alarms.find((a) => a.id === alarmId)) {
+        scheduleAlarm({ days: [day], hour: hour24, minute: selectedMinute });
+        setAlarms([
+          ...alarms,
+          { id: alarmId, day, hour: hour24, minute: selectedMinute },
+        ]);
+      }
+    });
+  }, [
+    isEnabled,
+    selectedHour,
+    selectedMinute,
+    selectedPeriod,
+    selectedDays,
+    isEveryday,
+  ]);
 
   return (
     <Container>
@@ -228,6 +257,12 @@ export default function AlarmScreen() {
         </DaysToggleContainer>
       </DayPicker>
       <TaskManager />
+      <TouchableOpacity onPress={stopAlarm}>
+        <Text>Stop Alarm Test</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => cancelAlarm()}>
+        <Text>Cancel Alarm Test</Text>
+      </TouchableOpacity>
     </Container>
   );
 }
