@@ -1,10 +1,18 @@
-import styled from '@emotion/native';
-import Checkbox from '@react-native-community/checkbox';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { removeAlarm, scheduleAlarm, stopAlarm } from 'expo-alarm-module';
-import React, { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import styled from "@emotion/native";
+import Checkbox from "@react-native-community/checkbox";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
+import { removeAlarm, scheduleAlarm, stopAlarm } from "expo-alarm-module";
+import React, { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import {
+  Platform,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const Container = styled.View`
   flex: 1;
@@ -23,7 +31,7 @@ export default function HomeScreen() {
     if (data && data.trim().length > 0) {
       setTasks([...tasks, data.trim()]);
     }
-    setValue('task', '');
+    setValue("task", "");
   };
 
   const setAlarm = async (localDate: Date) => {
@@ -39,25 +47,25 @@ export default function HomeScreen() {
 
     try {
       await scheduleAlarm({
-        uid: 'alarm1',
+        uid: "alarm1",
         day: trigger,
-        title: 'Wake Up!',
-        showDismiss: true,
-        showSnooze: true,
+        title: "Wake Up!",
+        showDismiss: false,
+        showSnooze: false,
         snoozeInterval: 5,
         repeating: true,
         active: true,
       } as any);
     } catch (err) {
-      console.error('Failed to schedule alarm', err);
+      console.error("Failed to schedule alarm", err);
     }
   };
 
   const onChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     const nativeEvent: any = event;
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       setShow(false);
-      if (nativeEvent?.type === 'dismissed') return;
+      if (nativeEvent?.type === "dismissed") return;
     } else {
       setShow(true);
     }
@@ -77,24 +85,24 @@ export default function HomeScreen() {
   const cancelAlarm = async () => {
     setTime(null);
     try {
-      await removeAlarm?.('alarm1');
+      await removeAlarm?.("alarm1");
     } catch (err) {
       try {
         await removeAlarm?.();
       } catch (e) {
-        console.error('Failed to remove alarm', e);
+        console.error("Failed to remove alarm", e);
       }
     }
   };
 
   const stopCurrentAlarm = async () => {
     try {
-      await stopAlarm?.('alarm1');
+      await stopAlarm?.("alarm1");
     } catch (err) {
       try {
         await stopAlarm?.();
       } catch (e) {
-        console.error('Failed to stop alarm', e);
+        console.error("Failed to stop alarm", e);
       }
     }
   };
@@ -122,7 +130,7 @@ export default function HomeScreen() {
             placeholder="Example Input"
             style={{
               height: 40,
-              borderColor: 'gray',
+              borderColor: "gray",
               borderWidth: 1,
               marginBottom: 10,
               paddingHorizontal: 10,
@@ -137,7 +145,10 @@ export default function HomeScreen() {
 
       {tasks.length > 0 ? (
         tasks.map((task, index) => (
-          <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View
+            key={index}
+            style={{ flexDirection: "row", alignItems: "center" }}
+          >
             <Checkbox
               value={false}
               onValueChange={() => {
