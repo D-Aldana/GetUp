@@ -1,5 +1,9 @@
 import { useSecureStore } from "@/hooks/use-local-storage";
-import { removeAlarm, scheduleAlarm, stopAlarm } from "expo-alarm-module";
+import {
+  scheduleAlarm as expoScheduleAlarm,
+  stopAlarm as expoStopAlarm,
+  removeAlarm,
+} from "expo-alarm-module";
 
 type ScheduledTime = {
   days: number[];
@@ -41,14 +45,14 @@ const getNextOccurrence = (
 export const useAlarm = () => {
   const [alarms, setAlarms] = useSecureStore<Alarm[]>("alarms", []);
 
-  const useScheduleAlarm = async (time: ScheduledTime) => {
+  const scheduleAlarm = async (time: ScheduledTime) => {
     const now = new Date();
 
     for (const day of time.days) {
       const nextAlarmDate = getNextOccurrence(day, time.hour, time.minute, now);
       const alarmId = `alarm-${day}-${time.hour}-${time.minute}`;
       try {
-        await scheduleAlarm({
+        await expoScheduleAlarm({
           uid: alarmId,
           day: nextAlarmDate,
           title: "Wake Up!",
@@ -66,13 +70,25 @@ export const useAlarm = () => {
           minute: time.minute,
         };
         setAlarms([...alarms, alarm]);
+        console.log(`Scheduled alarm ${alarmId} for ${nextAlarmDate}`);
       } catch (err) {
         console.error("Failed to schedule alarm", err);
       }
     }
   };
 
-  const useCancelAlarm = async (id: string) => {
+  const cancelAlarm = async (id?: string) => {
+    if (!id) {
+      for (const alarm of alarms) {
+        try {
+          await removeAlarm(alarm.id);
+        } catch (e) {
+          console.error("Failed to cancel alarm", e);
+        }
+      }
+      setAlarms([]);
+      return;
+    }
     try {
       await removeAlarm(id);
       setAlarms(alarms.filter((alarm) => alarm.id !== id));
@@ -81,17 +97,17 @@ export const useAlarm = () => {
     }
   };
 
-  const useStopAlarm = async (id: string) => {
+  const stopAlarm = async () => {
     try {
-      await stopAlarm(id);
+      await expoStopAlarm();
     } catch (e) {
       console.error("Failed to stop alarm", e);
     }
   };
 
   return {
-    useScheduleAlarm,
-    useCancelAlarm,
-    useStopAlarm,
+    scheduleAlarm,
+    cancelAlarm,
+    stopAlarm,
   };
 };
