@@ -5,19 +5,22 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 
 import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
 
-const Container = styled(ThemedView)`
+const Container = styled.View`
   flex: 1;
   align-items: center;
   justify-content: center;
   padding: 20px;
 `;
 
+const TaskListContainer = styled.View`
+  width: 100%;
+  max-height: 200px;
+  margin-top: 20px;
+`;
+
 const TaskList = styled.ScrollView`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  gap: 16px;
   margin-top: 10px;
   height: 150px;
   overflow-y: auto;
@@ -27,6 +30,8 @@ const TaskItem = styled.TouchableOpacity`
   background-color: #f9f9f9;
   padding: 5px 10px;
   border-radius: 5px;
+  align-items: center;
+  margin-bottom: 10px;
 `;
 
 const StopButton = styled.TouchableOpacity`
@@ -75,21 +80,27 @@ export default function ModalScreen() {
     <Container>
       <ThemedText type="title">Wake Up</ThemedText>
 
-      <TaskList>
-        {tasks.map((task, index) => (
-          <TaskItem key={index} onPress={() => toggleTask(index)}>
-            <ThemedText
-              style={{
-                textDecorationLine: tasksCompleted[index]
-                  ? "line-through"
-                  : "none",
-              }}
+      <TaskListContainer>
+        <TaskList>
+          {tasks.map((task, index) => (
+            <TaskItem
+              key={index}
+              onPress={() => toggleTask(index)}
+              disabled={tasksCompleted[index]}
             >
-              {task}
-            </ThemedText>
-          </TaskItem>
-        ))}
-      </TaskList>
+              <ThemedText
+                style={{
+                  textDecorationLine: tasksCompleted[index]
+                    ? "line-through"
+                    : "none",
+                }}
+              >
+                {task}
+              </ThemedText>
+            </TaskItem>
+          ))}
+        </TaskList>
+      </TaskListContainer>
 
       {allDone && (
         <>
