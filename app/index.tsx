@@ -3,6 +3,7 @@ import { TaskManager } from "@/components/task-manager";
 import { useAlarm } from "@/hooks/use-alarm";
 import { useSecureStore } from "@/hooks/use-local-storage";
 import styled from "@emotion/native";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Switch, Text, TouchableOpacity } from "react-native";
 
@@ -141,9 +142,17 @@ export default function AlarmScreen() {
     });
   };
 
-  const { scheduleAlarm, cancelAlarm, stopAlarm } = useAlarm();
+  const { scheduleAlarm, cancelAlarm, stopAlarm, getState } = useAlarm();
 
   useEffect(() => {
+    const checkAlarmState = async () => {
+      const state = await getState();
+      if (state) {
+        router.push("/modal");
+      }
+    };
+    checkAlarmState();
+
     if (!isEnabled) {
       alarms.forEach((alarm) => cancelAlarm(alarm.id));
       setAlarms([]);
@@ -262,6 +271,9 @@ export default function AlarmScreen() {
       </TouchableOpacity>
       <TouchableOpacity onPress={() => cancelAlarm()}>
         <Text>Cancel Alarm Test</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push("/modal")}>
+        <Text>Test Alarm</Text>
       </TouchableOpacity>
     </Container>
   );

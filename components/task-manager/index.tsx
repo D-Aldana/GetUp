@@ -34,6 +34,7 @@ const TaskInput = styled.TextInput`
   background-color: #f0f0f0;
   padding: 10px;
   border-radius: 5px;
+  color: #000;
 `;
 
 const AddButton = styled.TouchableOpacity`

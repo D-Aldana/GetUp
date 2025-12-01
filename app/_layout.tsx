@@ -5,7 +5,7 @@ import {
 } from "@react-navigation/native";
 import Constants from "expo-constants";
 import * as Notifications from "expo-notifications";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import { Platform } from "react-native";
@@ -76,6 +76,8 @@ export default function RootLayout() {
     Notifications.Notification | undefined
   >(undefined);
 
+  const lastResponse = Notifications.useLastNotificationResponse();
+
   useEffect(() => {
     registerForPushNotificationsAsync().then(
       (token) => token && setExpoPushToken(token)
@@ -96,6 +98,10 @@ export default function RootLayout() {
       Notifications.addNotificationResponseReceivedListener((response) => {
         console.log(response);
       });
+
+    if (lastResponse) {
+      router.push("/modal");
+    }
 
     return () => {
       notificationListener.remove();

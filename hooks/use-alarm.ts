@@ -2,7 +2,9 @@ import { useSecureStore } from "@/hooks/use-local-storage";
 import {
   scheduleAlarm as expoScheduleAlarm,
   stopAlarm as expoStopAlarm,
+  getAlarmState,
   removeAlarm,
+  removeAllAlarms,
 } from "expo-alarm-module";
 
 type ScheduledTime = {
@@ -79,13 +81,7 @@ export const useAlarm = () => {
 
   const cancelAlarm = async (id?: string) => {
     if (!id) {
-      for (const alarm of alarms) {
-        try {
-          await removeAlarm(alarm.id);
-        } catch (e) {
-          console.error("Failed to cancel alarm", e);
-        }
-      }
+      await removeAllAlarms();
       setAlarms([]);
       return;
     }
@@ -105,9 +101,20 @@ export const useAlarm = () => {
     }
   };
 
+  const getState = async () => {
+    try {
+      const state = await getAlarmState();
+      return state;
+    } catch (e) {
+      console.error("Failed to get alarm state", e);
+      return null;
+    }
+  };
+
   return {
     scheduleAlarm,
     cancelAlarm,
     stopAlarm,
+    getState,
   };
 };
