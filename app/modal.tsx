@@ -73,7 +73,7 @@ export default function ModalScreen() {
 
   const handleStop = async () => {
     await stopAlarm();
-    router.back();
+    router.push("/");
   };
 
   return (
