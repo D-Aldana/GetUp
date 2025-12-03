@@ -110,6 +110,7 @@ export default function AlarmScreen() {
   const [selectedMinute, setSelectedMinute] = useState<number>(0);
   const [selectedPeriod, setSelectedPeriod] = useState<string>("AM");
   const [isEveryday, setIsEveryday] = useState<boolean>(true);
+  const [alarmRinging, setAlarmRinging] = useState<boolean>(false);
 
   const [selectedDays, setSelectedDays] = useState<{
     [key: number]: boolean;
@@ -143,6 +144,20 @@ export default function AlarmScreen() {
   };
 
   const { scheduleAlarm, cancelAlarm, stopAlarm, getState } = useAlarm();
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const state = await getState();
+      if (state && !alarmRinging) {
+        setAlarmRinging(true);
+        router.push("/modal");
+      } else if (!state && alarmRinging) {
+        setAlarmRinging(false);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [alarmRinging]);
 
   useEffect(() => {
     const checkAlarmState = async () => {
