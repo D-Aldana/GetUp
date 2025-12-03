@@ -105,16 +105,13 @@ type Alarm = {
 
 export default function AlarmScreen() {
   const [alarms, setAlarms] = useSecureStore<Alarm[]>("alarms", []);
-
-  const [selectedHour, setSelectedHour] = useState<number>(12);
-  const [selectedMinute, setSelectedMinute] = useState<number>(0);
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("AM");
-  const [isEveryday, setIsEveryday] = useState<boolean>(true);
-  const [alarmRinging, setAlarmRinging] = useState<boolean>(false);
-
-  const [selectedDays, setSelectedDays] = useState<{
+  const [alarmTime, setAlarmTime] = useSecureStore<string>(
+    "alarmTime",
+    new Date()
+  );
+  const [storageSelectedDays, setStorageSelectedDays] = useSecureStore<{
     [key: number]: boolean;
-  }>({
+  }>("selectedDays", {
     0: true,
     1: true,
     2: true,
@@ -122,6 +119,28 @@ export default function AlarmScreen() {
     4: true,
     5: true,
     6: true,
+  });
+
+  const [selectedHour, setSelectedHour] = useState<number>(
+    alarmTime ? parseInt(alarmTime.split(":")[0]) : 12
+  );
+  const [selectedMinute, setSelectedMinute] = useState<number>(
+    alarmTime ? parseInt(alarmTime.split(":")[1]) : 0
+  );
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("AM");
+  const [isEveryday, setIsEveryday] = useState<boolean>(true);
+  const [alarmRinging, setAlarmRinging] = useState<boolean>(false);
+
+  const [selectedDays, setSelectedDays] = useState<{
+    [key: number]: boolean;
+  }>({
+    0: storageSelectedDays[0],
+    1: storageSelectedDays[1],
+    2: storageSelectedDays[2],
+    3: storageSelectedDays[3],
+    4: storageSelectedDays[4],
+    5: storageSelectedDays[5],
+    6: storageSelectedDays[6],
   });
 
   const [isEnabled, setIsEnabled] = useState(false);
@@ -173,6 +192,13 @@ export default function AlarmScreen() {
       setAlarms([]);
       return;
     }
+
+    setStorageSelectedDays(selectedDays);
+    setAlarmTime(
+      `${selectedHour < 10 ? `0${selectedHour}` : selectedHour}:${
+        selectedMinute < 10 ? `0${selectedMinute}` : selectedMinute
+      }`
+    );
 
     const hour24 =
       selectedPeriod === "PM" && selectedHour < 12
